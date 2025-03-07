@@ -126,6 +126,7 @@ struct bbr {
 		extra_acked_win_rtts:5,	/* age of extra_acked, in round trips */
 		extra_acked_win_idx:1,	/* current index in extra_acked array */
 		unused_c:6;
+	u64 alert_start_mstamp;		/* hs add, note the start time of the alert duration, unit: us */
 };
 
 #define CYCLE_LEN	8	/* number of phases in a pacing gain cycle */
@@ -201,6 +202,8 @@ static const u32 bbr_extra_acked_win_rtts = 5;
 static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
 /* Time period for clamping cwnd increment due to ack aggregation */
 static const u32 bbr_extra_acked_max_us = 100 * 1000;
+
+static const u32 bbr_alert_duration_rtts = 10;
 
 static void bbr_check_probe_rtt_done(struct sock *sk);
 
@@ -761,6 +764,26 @@ static void bbr_lt_bw_sampling(struct sock *sk, const struct rate_sample *rs)
 	bbr_lt_bw_interval_done(sk, bw);
 }
 
+/* hs add, check if the sk is in dynamic alert duration */
+static bool bbr_check_dynamic_alert(struct sock *sk, bool dynamic_alert)
+{
+	struct tcp_sock *tp = tcp_sk(sk);
+	struct bbr *bbr = inet_csk_ca(sk);
+
+	if (dynamic_alert) {
+		bbr->alert_start_mstamp = tp->delivered_mstamp;
+		printk("BBR dynamic alert");
+		return true;
+	}
+
+	bool out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
+
+	if (out_of_duration)
+		return false;
+	else
+		return true;
+}
+
 /* Estimate the bandwidth based on how fast packets are delivered */
 static void bbr_update_bw(struct sock *sk, const struct rate_sample *rs)
 {
@@ -807,7 +830,11 @@ static void bbr_update_bw(struct sock *sk, const struct rate_sample *rs)
 		minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
 	}
         */
-	minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
+	// hs modified	
+	if(!bbr_check_dynamic_alert(sk, rs.dynamic_alert) || bw <= bbr_bw(sk)){
+		minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
+	}
+	
 }
 
 /* Estimates the windowed max degree of ack aggregation.
@@ -1083,6 +1110,7 @@ static void bbr_init(struct sock *sk)
 	bbr->extra_acked_win_idx = 0;
 	bbr->extra_acked[0] = 0;
 	bbr->extra_acked[1] = 0;
+	bbr->alert_start_mstamp = 0;	// hs add
 
 	cmpxchg(&sk->sk_pacing_status, SK_PACING_NONE, SK_PACING_NEEDED);
 }

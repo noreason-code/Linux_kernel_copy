@@ -114,6 +114,10 @@ int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
 #define REXMIT_LOST	1 /* retransmit packets marked lost */
 #define REXMIT_NEW	2 /* FRTO-style transmit of unsent/new packets */
 
+// hs add
+#define ACK_ELAPSED_MIN （(unsigned)(HZ/10)）
+#define ACK_ELAPSED_MAX （(unsigned)(HZ/5)）
+
 #if IS_ENABLED(CONFIG_TLS_DEVICE)
 static DEFINE_STATIC_KEY_DEFERRED_FALSE(clean_acked_data_enabled, HZ);
 
@@ -3768,6 +3772,19 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	/* We very likely will need to access rtx queue. */
 	prefetch(sk->tcp_rtx_queue.rb_node);
 
+	// hs add
+	u32 elapsed = tcp_jiffies32 - tp->rcv_tstamp;
+	printk("elapsed time: %lld\n", elapsed);
+	if (elapsed > ACK_ELAPSED_MIN && elapsed < ACK_ELAPSED_MAX) {
+		rs.dynamic_alert = true;
+		printk("dynamic_alert: true");
+	}
+	else{
+		rs.dynamic_alert = false;
+		printk("dynamic_alert: false")
+	}
+		
+	
 	/* If the ack is older than previous acks
 	 * then we can probably ignore it.
 	 */

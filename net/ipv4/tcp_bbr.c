@@ -778,10 +778,13 @@ static bool bbr_check_dynamic_alert(struct sock *sk, bool dynamic_alert)
 
 	bool out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
 
-	if (out_of_duration)
+	if (out_of_duration) {
+		printk("out_of_duration: false");
 		return false;
-	else
+	}else {
+		printk("out_of_duration: false");
 		return true;
+	}
 }
 
 /* Estimate the bandwidth based on how fast packets are delivered */

@@ -3778,10 +3778,9 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	if (elapsed > ACK_ELAPSED_MIN && elapsed < ACK_ELAPSED_MAX) {
 		rs.dynamic_alert = true;
 		printk("dynamic_alert: true");
-	}
-	else{
+	}else {
 		rs.dynamic_alert = false;
-		printk("dynamic_alert: false")
+		printk("dynamic_alert: false");
 	}
 		
 	

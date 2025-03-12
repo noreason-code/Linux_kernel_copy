@@ -203,7 +203,7 @@ static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
 /* Time period for clamping cwnd increment due to ack aggregation */
 static const u32 bbr_extra_acked_max_us = 100 * 1000;
 
-static const u32 bbr_alert_duration_rtts = 10;
+static const u32 bbr_alert_duration_rtts = 20;
 
 static void bbr_check_probe_rtt_done(struct sock *sk);
 
@@ -776,12 +776,14 @@ static bool bbr_check_dynamic_alert(struct sock *sk, bool dynamic_alert)
 		return true;
 	}
 
-	bool out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
+	bool out_of_duration;
+	
+	out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
 
-	if (out_of_duration) {
-		printk("out_of_duration: false");
+	if (out_of_duration){
 		return false;
-	}else {
+	}
+	else {
 		printk("out_of_duration: false");
 		return true;
 	}
@@ -834,7 +836,7 @@ static void bbr_update_bw(struct sock *sk, const struct rate_sample *rs)
 	}
         */
 	// hs modified	
-	if(!bbr_check_dynamic_alert(sk, rs.dynamic_alert) || bw <= bbr_bw(sk)){
+	if(!bbr_check_dynamic_alert(sk, rs->dynamic_alert) || bw <= bbr_bw(sk)){
 		minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
 	}
 	

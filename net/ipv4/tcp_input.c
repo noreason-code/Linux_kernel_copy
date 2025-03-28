@@ -3764,6 +3764,13 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	u32 lost = tp->lost;
 	int rexmit = REXMIT_NONE; /* Flag to (re)transmit to recover losses */
 	u32 prior_fack;
+	u64 elapsed;	/* hs add, ack interval */
+	u32 ack_diff = 500000;	/* hs add */
+	__be16 dport_net;	/* hs add */
+	u16 dport;	/* hs add */
+
+	dport_net = sk->__sk_common.skc_dport;
+	dport = ntohs(dport_net);
 
 	sack_state.first_sackt = 0;
 	sack_state.rate = &rs;
@@ -3772,17 +3779,16 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	/* We very likely will need to access rtx queue. */
 	prefetch(sk->tcp_rtx_queue.rb_node);
 
-	// hs add
-	u64 elapsed;
-	elapsed = tcp_jiffies32 - tp->rcv_tstamp;
-	if (elapsed > ACK_ELAPSED_MIN) {
-		rs.dynamic_alert = true;
-		printk("elapsed time: %lld\n", elapsed);
-		printk("dynamic_alert: true");
-	}else{
-		rs.dynamic_alert = false;
-	}	
-	
+	/* hs add */
+	if(dport == 9990) {
+		elapsed = tcp_jiffies32 - tp->rcv_tstamp;
+		if(elapsed > ACK_ELAPSED_MIN) {
+			rs.failure_alert = true;
+		}else {
+			rs.failure_alert = false;
+		}
+	}
+		
 	/* If the ack is older than previous acks
 	 * then we can probably ignore it.
 	 */
@@ -3794,6 +3800,15 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 			return -SKB_DROP_REASON_TCP_TOO_OLD_ACK;
 		}
 		goto old_ack;
+	}
+
+	/* hs add */
+	if(dport == 9990) {
+		if(after(ack, prior_snd_una + ack_diff)) {
+			rs.recovery_alert = true;
+		}else {
+			rs.recovery_alert = false;
+		}
 	}
 
 	/* If the ack includes data we haven't sent yet, discard

@@ -1048,7 +1048,8 @@ struct rate_sample {
 	bool is_app_limited;	/* is sample from packet with bubble in pipe? */
 	bool is_retrans;	/* is sample from retransmission? */
 	bool is_ack_delayed;	/* is this (likely) a delayed ACK? */
-	bool dynamic_alert;		/* hs add, we have detected the link dynamic*/
+	bool failure_alert;		/* hs add, we have detected the ISL Failure */
+	bool recovery_alert;	/* hs add, we have detected the Faulty ISL Recovery */
 };
 
 struct tcp_congestion_ops {

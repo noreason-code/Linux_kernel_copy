@@ -787,12 +787,12 @@
      now = ktime_get_real_seconds();
      time64_to_tm(now, 0, &tm_info);
  
-     if(rs->failure_alert || (rs->recovery_alert && (rs->rtt_us < (bbr_new->min_rtt_us + 10000)))) {
+     if(rs->failure_alert || rs->recovery_alert) {
          dynamic_alert = true;
          if(rs->failure_alert) {
              printk(KERN_EMERG "ISL Failure. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
          }
-         if(rs->recovery_alert && (rs->rtt_us < (bbr_new->min_rtt_us + 10000))) {
+         if(rs->recovery_alert) {
              printk(KERN_EMERG "Faulty ISL Recovery. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
          }
      }else {

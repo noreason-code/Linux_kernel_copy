@@ -126,7 +126,7 @@ struct bbr {
 		extra_acked_win_rtts:5,	/* age of extra_acked, in round trips */
 		extra_acked_win_idx:1,	/* current index in extra_acked array */
 		unused_c:6;
-	u64 alert_start_mstamp;		/* hs add, note the start time of the alert duration, unit: us */
+	// u64 alert_start_mstamp;		/* hs add, note the start time of the alert duration, unit: us */
 };
 
 #define CYCLE_LEN	8	/* number of phases in a pacing gain cycle */
@@ -203,7 +203,7 @@ static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
 /* Time period for clamping cwnd increment due to ack aggregation */
 static const u32 bbr_extra_acked_max_us = 100 * 1000;
 
-static const u32 bbr_alert_duration_rtts = 10;	/* hs add */
+// static const u32 bbr_alert_duration_rtts = 10;	/* hs add */
 
 static void bbr_check_probe_rtt_done(struct sock *sk);
 
@@ -765,52 +765,52 @@ static void bbr_lt_bw_sampling(struct sock *sk, const struct rate_sample *rs)
 }
 
 /* hs add, check whether the sk is in dynamic alert duration */
-static bool bbr_check_dynamic_alert(struct sock *sk, const struct rate_sample *rs)
-{
-	struct tcp_sock *tp = tcp_sk(sk);
-	struct bbr *bbr = inet_csk_ca(sk);
-	bool dynamic_alert;
-	bool out_of_duration;
-	__be16 dport_net;	/* hs add */
-	u16 dport;	/* hs add */
-	struct tm tm_info;
-	time64_t now;
+// static bool bbr_check_dynamic_alert(struct sock *sk, const struct rate_sample *rs)
+// {
+// 	struct tcp_sock *tp = tcp_sk(sk);
+// 	struct bbr *bbr = inet_csk_ca(sk);
+// 	bool dynamic_alert;
+// 	bool out_of_duration;
+// 	__be16 dport_net;	/* hs add */
+// 	u16 dport;	/* hs add */
+// 	struct tm tm_info;
+// 	time64_t now;
 
-	dport_net = sk->__sk_common.skc_dport;
-	dport = ntohs(dport_net);
+// 	dport_net = sk->__sk_common.skc_dport;
+// 	dport = ntohs(dport_net);
 
-	if(dport != 9990) {
-		return false;
-	}
+// 	if(dport != 9990) {
+// 		return false;
+// 	}
 
-	now = ktime_get_real_seconds();
-	time64_to_tm(now, 0, &tm_info);
+// 	now = ktime_get_real_seconds();
+// 	time64_to_tm(now, 0, &tm_info);
 
-	if(rs->failure_alert || (rs->recovery_alert && (rs->rtt_us < (bbr->min_rtt_us + 10000)))) {
-		dynamic_alert = true;
-		if(rs->failure_alert) {
-			printk(KERN_EMERG "ISL Failure. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
-		}
-		if(rs->recovery_alert && (rs->rtt_us < (bbr->min_rtt_us + 10000))) {
-			printk(KERN_EMERG "Faulty ISL Recovery. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
-		}
-	}else {
-		dynamic_alert = false;
-	}
+// 	if(rs->failure_alert || (rs->recovery_alert && (rs->rtt_us < (bbr->min_rtt_us + 10000)))) {
+// 		dynamic_alert = true;
+// 		if(rs->failure_alert) {
+// 			// printk(KERN_EMERG "ISL Failure. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
+// 		}
+// 		if(rs->recovery_alert && (rs->rtt_us < (bbr->min_rtt_us + 10000))) {
+// 			// printk(KERN_EMERG "Faulty ISL Recovery. Current UTC Time: %02d:%02d:%02d\n", tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec);
+// 		}
+// 	}else {
+// 		dynamic_alert = false;
+// 	}
 
-	if(dynamic_alert) {
-		bbr->alert_start_mstamp = tp->delivered_mstamp;
-		return true;
-	}
+// 	if(dynamic_alert) {
+// 		bbr->alert_start_mstamp = tp->delivered_mstamp;
+// 		return true;
+// 	}
 
-	out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
+// 	out_of_duration = tcp_stamp_us_delta(tp->delivered_mstamp, bbr->alert_start_mstamp) > (bbr_alert_duration_rtts * bbr->min_rtt_us);
 
-	if(out_of_duration) {
-		return false;
-	}else {
-		return true;
-	}
-}
+// 	if(out_of_duration) {
+// 		return false;
+// 	}else {
+// 		return true;
+// 	}
+// }
 
 /* Estimate the bandwidth based on how fast packets are delivered */
 static void bbr_update_bw(struct sock *sk, const struct rate_sample *rs)
@@ -859,9 +859,10 @@ static void bbr_update_bw(struct sock *sk, const struct rate_sample *rs)
 	}
         */
 	// hs modified	
-	if(!bbr_check_dynamic_alert(sk, rs) || bw <= bbr_bw(sk)){
-		minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
-	}
+	// if(!bbr_check_dynamic_alert(sk, rs) || bw <= bbr_bw(sk)){
+	// 	minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
+	// }
+	minmax_running_max(&bbr->bw, bbr_bw_rtts, bbr->rtt_cnt, bw);
 	
 }
 
@@ -1138,7 +1139,7 @@ static void bbr_init(struct sock *sk)
 	bbr->extra_acked_win_idx = 0;
 	bbr->extra_acked[0] = 0;
 	bbr->extra_acked[1] = 0;
-	bbr->alert_start_mstamp = 0;	// hs add
+	// bbr->alert_start_mstamp = 0;	// hs add
 
 	cmpxchg(&sk->sk_pacing_status, SK_PACING_NONE, SK_PACING_NEEDED);
 }

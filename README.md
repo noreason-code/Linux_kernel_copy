@@ -1,2 +1,2 @@
 # Linux_kernel_copy
-code copy for developing
+This is a code repository used to store the code manuscript during developing.
